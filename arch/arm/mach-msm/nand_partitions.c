@@ -74,7 +74,6 @@ static int __init parse_tag_msm_partition(const struct tag *tag)
 		ptn->offset = entry->offset;
 		ptn->size = entry->size;
 
-
 		printk(KERN_INFO "Partition (from atag) %s "
 				"-- Offset:%llx Size:%llx\n",
 				ptn->name, ptn->offset, ptn->size);
