@@ -62,6 +62,7 @@
 #include "timer.h"
 #include "socinfo.h"
 #include "msm-keypad-devices.h"
+#include "acpuclock.h"
 #include "pm.h"
 #include "proc_comm.h"
 #include "smd_private.h"
@@ -204,32 +205,6 @@
 
 #define MSM_PMEM_ADSP_SIZE	0x2B96000
 
-#ifdef CONFIG_MSM_HDMI
-    #define MSM_HDMI_SIZE 0x300000
-#else
-    #define MSM_HDMI_SIZE 0
-#endif
-
-#ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
-    #define MSM_FB_SIZE (800 * 480 * 4 * 3) + MSM_HDMI_SIZE
-#else
-    #define MSM_FB_SIZE (800 * 480 * 4 * 2) + MSM_HDMI_SIZE
-#endif
-/*
-#ifdef CONFIG_MSM_HDMI
-    #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
-	#define MSM_FB_SIZE	roundup(0xC00000,4096) //0x2EE000 //0x800000  //0x500000  //0x2EE000  // modified for 24bits LCD display
-    #else 
-	#define MSM_FB_SIZE	0x800000
-    #endif
-#else
-    #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
-        #define MSM_FB_SIZE	roundup(0x780000,4096)  //0x2EE000 //0x500000  //0x2EE000  // modified for 24bits LCD display
-    #else
-	#define MSM_FB_SIZE	0x500000
-    #endif
-#endif
-*/
 #define MSM_FB_SIZE 0xD00000
 
 #define MSM_AUDIO_SIZE		0x80000
@@ -493,13 +468,8 @@ static struct usb_composition usb_func_composition[] = {
 
 static struct usb_mass_storage_platform_data mass_storage_pdata = {
 	.nluns		= 2,
-#if 0
 	.vendor		= "GOOGLE",
 	.product	= "Mass Storage",
-#else 
-	.vendor		= "Huawei",
-	.product	= "Ideos Tablet",
-#endif	
 	.release	= 0xFFFF,
 };
 static struct platform_device mass_storage_device = {
@@ -509,31 +479,14 @@ static struct platform_device mass_storage_device = {
 		.platform_data          = &mass_storage_pdata,
 	},
 };
-
 static struct android_usb_platform_data android_usb_pdata = {
-#if HUAWEI_HWID(S70)
-	.vendor_id	= USBVID_HUAWEI,
-#else
 	.vendor_id	= 0x05C6,
-#endif
 	.version	= 0x0100,
 	.compositions   = usb_func_composition,
 	.num_compositions = ARRAY_SIZE(usb_func_composition),
-#if HUAWEI_HWID(S70)
-	.product_name	= "Ideos Tablet",
-	.manufacturer_name = "Huawei Incorporated",
-
-#ifdef HUAWEI_MSC_VENDOR_PRODUCT
-	.msc_vendor = "HUAWEI",  // NOTICE: 8 characters limit in Win XP
-	.msc_product = "Ideos Tablet",  // NOTICE: 16 characters limit in Wind XP
-#endif
-#else
 	.product_name	= "Qualcomm HSUSB Device",
 	.manufacturer_name = "Qualcomm Incorporated",
-	.nluns = 1,
-#endif
 };
-
 static struct platform_device android_usb_device = {
 	.name	= "android_usb",
 	.id		= -1,
@@ -542,16 +495,6 @@ static struct platform_device android_usb_device = {
 	},
 };
 #endif
-
-#if defined(CONFIG_SMC91X) || defined(CONFIG_SMC91X_MODULE)
-static struct platform_device smc91x_device = {
-	.name           = "smc91x",
-	.id             = 0,
-	.num_resources  = ARRAY_SIZE(smc91x_resources),
-	.resource       = smc91x_resources,
-};
-#endif
-
 
 #ifdef CONFIG_USB_FUNCTION
 static struct usb_function_map usb_functions_map[] = {
@@ -567,7 +510,6 @@ static struct usb_function_map usb_functions_map[] = {
 };
 
 /* dynamic composition */
-#if !HUAWEI_HWID(S70)
 static struct usb_composition usb_func_composition[] = {
 	{
 		.product_id         = 0x9012,
@@ -619,63 +561,10 @@ static struct usb_composition usb_func_composition[] = {
 		.functions	    = 0x0F, /* 01111 */
 	},
 };
-#else
-static struct usb_composition usb_func_composition[] = {
-	{
-		.product_id         = 0x9012,
-		.functions	    = 0x5, /* 0101 */
-	},
-
-	{
-		.product_id         = 0x9013,
-		.functions	    = 0x15, /* 10101 */
-	},
-
-	{
-		.product_id         = 0x9014,
-		.functions	    = 0x30, /* 110000 */
-	},
-
-	{
-		.product_id         = 0x9015,
-		.functions	    = 0x12, /* 10010 */
-	},
-
-	{
-		.product_id         = 0x9016,
-		.functions	    = 0xD, /* 01101 */
-	},
-
-	{
-		.product_id         = 0x9017,
-		.functions	    = 0x1D, /* 11101 */
-	},
-
-	{
-		.product_id         = 0xF000,
-		.functions	    = 0x10, /* 10000 */
-	},
-
-	{
-		.product_id         = 0xF009,
-		.functions	    = 0x20, /* 100000 */
-	},
-
-	{
-		.product_id         = USBPID_HUAWEI_S7,
-		.functions	    = 0x1F, /* 011111 */
-	},
-
-	{
-		.product_id         = 0x901A,
-		.functions	    = 0x0F, /* 01111 */
-	},
-};
-#endif
 #endif
 
 static struct msm_handset_platform_data hs_platform_data = {
-	.hs_name = "s7_handset",
+	.hs_name = "8k_handset",
 	.pwr_key_delay_ms = 500, /* 0 will disable end key */
 };
 
@@ -686,18 +575,6 @@ static struct platform_device hs_device = {
 		.platform_data = &hs_platform_data,
 	},
 };
-
-#ifdef CONFIG_HUAWEI_MSM_VIBRATOR 
-static struct platform_device vibrator_device = {
-	.name		= "time_vibrator",
-	.id		= -1,
-};
-
-static int init_vibrator_device(void)
-{
-   return platform_device_register(&vibrator_device);
-}
-#endif
 
 #ifdef CONFIG_USB_FS_HOST
 static struct msm_gpio fsusb_config[] = {
@@ -727,17 +604,10 @@ static struct msm_hsusb_platform_data msm_hsusb_pdata = {
 #ifdef CONFIG_USB_FUNCTION
 	.version	= 0x0100,
 	.phy_info	= (USB_PHY_INTEGRATED | USB_PHY_MODEL_180NM),
-#if HUAWEI_HWID(S70)
-	.vendor_id			= USBVID_HUAWEI,
-	.product_name       = "S70",
-	.serial_number      = "1234567890ABCDEF",
-	.manufacturer_name  = "HUAWEI",
-#else
 	.vendor_id          = 0x5c6,
 	.product_name       = "Qualcomm HSUSB Device",
 	.serial_number      = "1234567890ABCDEF",
 	.manufacturer_name  = "Qualcomm Incorporated",
-#endif
 	.compositions	= usb_func_composition,
 	.num_compositions = ARRAY_SIZE(usb_func_composition),
 	.function_map   = usb_functions_map,
@@ -821,7 +691,6 @@ static struct android_pmem_platform_data android_pmem_adsp_pdata = {
 	.allocator_type = PMEM_ALLOCATORTYPE_BITMAP,
 	.cached = 0,
 };
-#ifdef CONFIG_KERNEL_PMEM_SMI_REGION
 
 static struct android_pmem_platform_data android_pmem_smipool_pdata = {
 	.name = "pmem_smipool",
@@ -831,7 +700,6 @@ static struct android_pmem_platform_data android_pmem_smipool_pdata = {
 	.cached = 0,
 };
 
-#endif
 
 static struct platform_device android_pmem_device = {
 	.name = "android_pmem",
@@ -845,14 +713,12 @@ static struct platform_device android_pmem_adsp_device = {
 	.dev = { .platform_data = &android_pmem_adsp_pdata },
 };
 
-#ifdef CONFIG_KERNEL_PMEM_SMI_REGION
-
 static struct platform_device android_pmem_smipool_device = {
 	.name = "android_pmem",
 	.id = 2,
 	.dev = { .platform_data = &android_pmem_smipool_pdata },
 };
-#endif
+
 
 static struct platform_device android_pmem_kernel_ebi1_device = {
 	.name = "android_pmem",
@@ -904,8 +770,6 @@ static struct platform_device msm_fb_device = {
 	}
 };
 
-
-#if defined(CONFIG_SPI_QSD) || defined(CONFIG_SPI_QSD_MODULE)
 static struct msm_gpio bma_spi_gpio_config_data[] = {
 	{ GPIO_CFG(22, 0, GPIO_INPUT,  GPIO_NO_PULL, GPIO_2MA), "bma_irq" },
 };
@@ -1068,7 +932,6 @@ static void __init msm_qsd_spi_init(void)
 {
 	qsd_device_spi.dev.platform_data = &qsd_spi_pdata;
 }
-#endif
 
 static int mddi_toshiba_pmic_bl(int level)
 {
@@ -1253,9 +1116,7 @@ static unsigned audio_gpio_on[] = {
 	GPIO_CFG(71, 2, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),	/* PCM_CLK */
 	GPIO_CFG(142, 2, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),	/* CC_I2S_CLK */
 	GPIO_CFG(143, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),	/* SADC_WSOUT */
-#if !HUAWEI_HWID_L1(S7)
 	GPIO_CFG(144, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA),	/* SADC_DIN */
-#endif
 	GPIO_CFG(145, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),	/* SDAC_DOUT */
 	GPIO_CFG(146, 2, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),	/* MA_CLK_OUT */
 };
@@ -1712,40 +1573,6 @@ exit:
 #else
 #define bt_power_init(x) do {} while (0)
 #endif
-/*
-static struct resource kgsl_resources[] = {
-       {
-		.name  = "kgsl_reg_memory",
-		.start = 0xA0000000,
-		.end = 0xA001ffff,
-		.flags = IORESOURCE_MEM,
-       },
-       {
-		.name   = "kgsl_phys_memory",
-		.start = MSM_GPU_PHYS_BASE,
-		.end = MSM_GPU_PHYS_BASE + MSM_GPU_PHYS_SIZE - 1,
-		.flags = IORESOURCE_MEM,
-       },
-       {
-		.name = "kgsl_yamato_irq",
-		.start = INT_GRAPHICS,
-		.end = INT_GRAPHICS,
-		.flags = IORESOURCE_IRQ,
-       },
-};
-static struct kgsl_platform_data kgsl_pdata = {
-	.high_axi_3d = 128000, // Max for 8K 
-	.max_grp2d_freq = 0,
-	.min_grp2d_freq = 0,
-	.set_grp2d_async = NULL,
-	.max_grp3d_freq = 0,
-	.min_grp3d_freq = 0,
-	.set_grp3d_async = NULL,
-	.imem_clk_name = "imem_clk",
-	.grp3d_clk_name = "grp_clk",
-	.grp2d_clk_name = NULL,
-};
-*/
 static struct resource kgsl_3d0_resources[] = {
          {
                  .name  = KGSL_3D0_REG_MEMORY,
@@ -1882,7 +1709,6 @@ static struct msm_acpu_clock_platform_data qsd8x50_clock_data = {
 };
 
 
-#if !HUAWEI_HWID(S70)
 static void touchpad_gpio_release(void)
 {
 	gpio_free(TOUCHPAD_IRQ);
@@ -1936,9 +1762,7 @@ static struct msm_touchpad_platform_data msm_touchpad_data = {
 	.gpio_setup  = touchpad_gpio_setup,
 	.gpio_shutdown = touchpad_gpio_release
 };
-#endif
 
-#if !HUAWEI_HWID(S70)
 #define KBD_RST 35
 #define KBD_IRQ 36
 
@@ -2005,7 +1829,6 @@ static struct msm_i2ckbd_platform_data msm_kybd_data = {
 	.gpio_shutdown = kbd_gpio_release,
 	.hw_reset = kbd_hwreset,
 };
-#endif
 
 #if defined(CONFIG_MOUSE_OFN_HID) || defined(CONFIG_MOUSE_OFN_HID_MODULE)
 static void __init ofn_power_init(void)
@@ -2428,7 +2251,6 @@ static struct i2c_board_info msm_i2c_board_info[] __initdata = {
 		I2C_BOARD_INFO("mt9t013", 0x6C),
 	},
 #endif
-
 	{
 		I2C_BOARD_INFO("tps65023", 0x48),
 	},
@@ -2621,46 +2443,6 @@ static int qsd8x50_camera_init(void)
 #endif
 
 #ifdef CONFIG_MSM_CAMERA
-#if HUAWEI_HWID_L2(S7, S7201)
-static uint32_t camera_off_gpio_table[] = {
-	GPIO_CFG(4,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT4 */
-	GPIO_CFG(5,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT5 */
-	GPIO_CFG(6,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT6 */
-	GPIO_CFG(7,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT7 */
-	GPIO_CFG(8,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT8 */
-	GPIO_CFG(9,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT9 */
-	GPIO_CFG(10, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT10 */
-	GPIO_CFG(11, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT11 */
-	GPIO_CFG(12, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* PCLK */
-	GPIO_CFG(13, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* HSYNC_IN */
-	GPIO_CFG(14, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* VSYNC_IN */
-	GPIO_CFG(15, 0, GPIO_OUTPUT,GPIO_PULL_DOWN, GPIO_2MA), /* MCLK */
-	GPIO_CFG(107, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	GPIO_CFG(108, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	GPIO_CFG(85, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	GPIO_CFG(84, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-};
-
-static uint32_t camera_on_gpio_table[] = {
-	GPIO_CFG(4,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT4 */
-	GPIO_CFG(5,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT5 */
-	GPIO_CFG(6,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT6 */
-	GPIO_CFG(7,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT7 */
-	GPIO_CFG(8,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT8 */
-	GPIO_CFG(9,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT9 */
-	GPIO_CFG(10, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT10 */
-	GPIO_CFG(11, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT11 */
-	GPIO_CFG(12, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* PCLK */
-	GPIO_CFG(13, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* HSYNC_IN */
-	GPIO_CFG(14, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* VSYNC_IN */
-	GPIO_CFG(15, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA), /* MCLK */
-	GPIO_CFG(107, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	GPIO_CFG(108, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	GPIO_CFG(85, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	GPIO_CFG(84, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-
-};
-#else
 static uint32_t camera_off_gpio_table[] = {
 	/* parallel CAMERA interfaces */
 	GPIO_CFG(0,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* DAT0 */
@@ -2678,19 +2460,7 @@ static uint32_t camera_off_gpio_table[] = {
 	GPIO_CFG(12, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* PCLK */
 	GPIO_CFG(13, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* HSYNC_IN */
 	GPIO_CFG(14, 0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* VSYNC_IN */
-	//GPIO_CFG(15, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA), /* MCLK */
-	GPIO_CFG(15, 0, GPIO_OUTPUT,GPIO_PULL_DOWN, GPIO_2MA), /* MCLK */
-    /* FFA front Sensor Standby */
-	GPIO_CFG(107, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-    /* FFA front Sensor Reset */
-	GPIO_CFG(108, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-	/*lijuan add gpio 95 96 107 109 end*/
-
-	/* FFA front Sensor Standby */
-	GPIO_CFG(85, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-    /* FFA front Sensor Reset */
-	GPIO_CFG(84, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-
+	GPIO_CFG(15, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA), /* MCLK */
 };
 
 static uint32_t camera_on_gpio_table[] = {
@@ -2711,20 +2481,8 @@ static uint32_t camera_on_gpio_table[] = {
 	GPIO_CFG(13, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* HSYNC_IN */
 	GPIO_CFG(14, 1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_2MA), /* VSYNC_IN */
 	GPIO_CFG(15, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA), /* MCLK */
-
-	/* FFA front Sensor Standby */
-	GPIO_CFG(107, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-    /* FFA front Sensor Reset */
-    GPIO_CFG(108, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-
-   /* FFA front Sensor Standby */
-    GPIO_CFG(85, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
-   /* FFA front Sensor Reset */
-    GPIO_CFG(84, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_2MA),
 };
-#endif
 
-#if !HUAWEI_HWID_L1(S7)
 static uint32_t camera_on_gpio_ffa_table[] = {
 	/* parallel CAMERA interfaces */
 	GPIO_CFG(95,  1, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_16MA), /* I2C_SCL */
@@ -2737,7 +2495,6 @@ static uint32_t camera_off_gpio_ffa_table[] = {
 	/* FFA front Sensor Reset */
 	GPIO_CFG(137,  0, GPIO_INPUT, GPIO_PULL_DOWN, GPIO_16MA),
 };
-#endif
 
 static void config_gpio_table(uint32_t *table, int len)
 {
@@ -3262,8 +3019,8 @@ static struct msm_camera_sensor_flash_data flash_mt9d112 = {
 
 static struct msm_camera_sensor_info msm_camera_sensor_mt9d112_data = {
 	.sensor_name    = "mt9d112",
-    .sensor_reset   = GPIO_MCAM_RST,
-    .sensor_pwd     = GPIO_MCAM_PWDN,
+        .sensor_reset   = 17,
+        .sensor_pwd     = 85,
 	.vcm_pwd        = 0,
 	.vcm_enable     = 0,
 	.pdata          = &msm_camera_device_data,
@@ -3418,8 +3175,8 @@ static struct msm_camera_sensor_flash_data flash_s5k3e2fx = {
 
 static struct msm_camera_sensor_info msm_camera_sensor_s5k3e2fx_data = {
 	.sensor_name    = "s5k3e2fx",
-    .sensor_reset   = GPIO_MCAM_RST,
-    .sensor_pwd     = GPIO_MCAM_PWDN,
+        .sensor_reset   = 17,
+        .sensor_pwd     = 85,
 	/*.vcm_pwd = 31, */  /* CAM1_VCM_EN, enabled in a9 */
 	.vcm_enable     = 0,
 	.pdata          = &msm_camera_device_data,
@@ -3444,9 +3201,9 @@ static struct msm_camera_sensor_flash_data flash_mt9p012 = {
 
 static struct msm_camera_sensor_info msm_camera_sensor_mt9p012_data = {
 	.sensor_name    = "mt9p012",
-    .sensor_reset   = GPIO_MCAM_RST,
-    .sensor_pwd     = GPIO_MCAM_PWDN,
-	.vcm_pwd        = GPIO_MCAM_VCM_PWDN,
+        .sensor_reset   = 17,
+        .sensor_pwd     = 85,
+	.vcm_pwd        = 88,
 	.vcm_enable     = 0,
 	.pdata          = &msm_camera_device_data,
 	.resource       = msm_camera_resources,
@@ -3496,8 +3253,8 @@ static struct msm_camera_sensor_flash_data flash_mt9t013 = {
 
 static struct msm_camera_sensor_info msm_camera_sensor_mt9t013_data = {
 	.sensor_name    = "mt9t013",
-    .sensor_reset   = GPIO_MCAM_RST,
-    .sensor_pwd     = GPIO_MCAM_PWDN,
+        .sensor_reset   = 17,
+        .sensor_pwd     = 85,
 	.vcm_pwd        = 0,
 	.vcm_enable     = 0,
 	.pdata          = &msm_camera_device_data,
@@ -3558,45 +3315,17 @@ static int hsusb_rpc_connect(int connect)
 		return msm_hsusb_rpc_close();
 }
 
-#ifdef CONFIG_USB_FS_HOST
-	 #if HUAWEI_HWID_L2(S7, S7201)
-		static struct msm_otg_platform_data msm_otg_pdata = {
-			.rpc_connect	= hsusb_rpc_connect,
-			//.pmic_notif_init         = msm_pm_app_rpc_init,   
-			//.pmic_notif_deinit       = msm_pm_app_rpc_deinit,
-			//.pmic_register_vbus_sn   = msm_pm_app_register_vbus_sn,
-			//.pmic_unregister_vbus_sn = msm_pm_app_unregister_vbus_sn,
-			.pmic_enable_ldo         = msm_pm_app_enable_usb_ldo,
-			.pemp_level              = PRE_EMPHASIS_WITH_10_PERCENT,
-			.cdr_autoreset           = CDR_AUTO_RESET_DEFAULT,
-			.drv_ampl                = HS_DRV_AMPLITUDE_5_PERCENT,
-		};
-	 #else
-		static struct msm_otg_platform_data msm_otg_pdata = {
-			.rpc_connect	= hsusb_rpc_connect,
-			.pmic_notif_init         = msm_pm_app_rpc_init,
-			.pmic_notif_deinit       = msm_pm_app_rpc_deinit,
-			.pmic_register_vbus_sn   = msm_pm_app_register_vbus_sn,
-			.pmic_unregister_vbus_sn = msm_pm_app_unregister_vbus_sn,
-			.pmic_enable_ldo         = msm_pm_app_enable_usb_ldo,
-			.pemp_level              = PRE_EMPHASIS_WITH_10_PERCENT,
-			.cdr_autoreset           = CDR_AUTO_RESET_DEFAULT,
-			.drv_ampl                = HS_DRV_AMPLITUDE_5_PERCENT,
-		};
-	 #endif
-#else
-		static struct msm_otg_platform_data msm_otg_pdata = {
-			.rpc_connect	= hsusb_rpc_connect,
-			.pmic_notif_init         = msm_pm_app_rpc_init,
-			.pmic_notif_deinit       = msm_pm_app_rpc_deinit,
-			.pmic_register_vbus_sn   = msm_pm_app_register_vbus_sn,
-			.pmic_unregister_vbus_sn = msm_pm_app_unregister_vbus_sn,
-			.pmic_enable_ldo         = msm_pm_app_enable_usb_ldo,
-			.pemp_level              = PRE_EMPHASIS_WITH_10_PERCENT,
-			.cdr_autoreset           = CDR_AUTO_RESET_DEFAULT,
-			.drv_ampl                = HS_DRV_AMPLITUDE_5_PERCENT,
-		};
-#endif
+static struct msm_otg_platform_data msm_otg_pdata = {
+	.rpc_connect	= hsusb_rpc_connect,
+	.pmic_notif_init         = msm_pm_app_rpc_init,
+	.pmic_notif_deinit       = msm_pm_app_rpc_deinit,
+	.pmic_register_vbus_sn   = msm_pm_app_register_vbus_sn,
+	.pmic_unregister_vbus_sn = msm_pm_app_unregister_vbus_sn,
+	.pmic_enable_ldo         = msm_pm_app_enable_usb_ldo,
+	.pemp_level              = PRE_EMPHASIS_WITH_10_PERCENT,
+	.cdr_autoreset           = CDR_AUTO_RESET_DEFAULT,
+	.drv_ampl                = HS_DRV_AMPLITUDE_5_PERCENT,
+};
 
 static struct msm_hsusb_gadget_platform_data msm_gadget_pdata;
 
@@ -3665,7 +3394,6 @@ static struct platform_device *devices[] __initdata = {
 	&msm_device_uart3,
 #endif
 	&msm_device_pmic_leds,
-//	&msm_device_kgsl,
 	&msm_kgsl_3d0,
 	&hs_device,
 #if defined(CONFIG_TSIF) || defined(CONFIG_TSIF_MODULE)
@@ -3723,12 +3451,6 @@ static void __init qsd8x50_init_irq(void)
 	msm_init_sirc();
 }
 
-static void kgsl_phys_memory_init(void)
-{
-	request_mem_region(kgsl_3d0_resources[1].start,
-		resource_size(&kgsl_3d0_resources[1]), "kgsl-3d");
-}
-
 static void usb_mpp_init(void)
 {
 	unsigned rc;
@@ -3738,6 +3460,7 @@ static void usb_mpp_init(void)
 	if (machine_is_qsd8x50_ffa() || machine_is_qsd8x50_surf()) {
 #else
 	unsigned mpp_usb = 20;
+
 	if (machine_is_qsd8x50_ffa()) {
 #endif
 		rc = mpp_config_digital_out(mpp_usb,
@@ -3860,7 +3583,7 @@ static struct sdcc_gpio sdcc_cfg_data[] = {
 	},
 };
 
-static unsigned long vreg_sts = 0, gpio_sts = 0;
+static unsigned long vreg_sts, gpio_sts;
 
 static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
 {
@@ -3914,8 +3637,8 @@ static int vreg_mmc_control(int sdcc_id, int on)
         set_bit(sdcc_id, &vreg_sts);
 	}
 
-//    I("vreg_mmc control status: vreg_sts=%08x sdccid=%d on=%d", 
-//       (uint32_t)vreg_sts, sdcc_id, on);
+    I("vreg_mmc control status: vreg_sts=%08x sdccid=%d on=%d", 
+       (uint32_t)vreg_sts, sdcc_id, on);
     
     return rc;
 }
@@ -3984,10 +3707,10 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 }
 #endif
 #endif
-
 #if (defined(CONFIG_MMC_MSM_SDC1_SUPPORT)\
 	|| defined(CONFIG_MMC_MSM_SDC2_SUPPORT)\
 	|| defined(CONFIG_MMC_MSM_SDC4_SUPPORT))
+
 static int msm_sdcc_get_wpswitch(struct device *dv)
 {
 	void __iomem *wp_addr = 0;
@@ -4458,10 +4181,9 @@ static void __init qsd8x50_init_mmc(void)
 #ifdef CONFIG_MMC_MSM_SDC4_SUPPORT
 		msm_add_sdcc(4, &qsd8x50_sdc4_data);
 #endif
-	} else
-		printk(KERN_ERR "%s: invalid machine type\n", __func__);
-}
+	}
 
+}
 #if defined(CONFIG_SMC91X) || defined(CONFIG_SMC91X_MODULE)
 static void __init qsd8x50_cfg_smc91x(void)
 {
@@ -4522,11 +4244,6 @@ msm_i2c_gpio_config(int iface, int config_type)
 {
 	int gpio_scl;
 	int gpio_sda;
-
-#if HUAWEI_HWID(S70)
-	gpio_scl = 95;
-	gpio_sda = 96;
-#else
 	if (iface) {
 		gpio_scl = 60;
 		gpio_sda = 61;
@@ -4534,8 +4251,6 @@ msm_i2c_gpio_config(int iface, int config_type)
 		gpio_scl = 95;
 		gpio_sda = 96;
 	}
-#endif
-
 	if (config_type) {
 		gpio_tlmm_config(GPIO_CFG(gpio_scl, 1, GPIO_INPUT,
 					GPIO_NO_PULL, GPIO_16MA), GPIO_ENABLE);
@@ -4581,13 +4296,10 @@ static void __init msm_device_i2c_init(void)
 		pr_err("failed to request gpio i2c_pri_clk\n");
 	if (gpio_request(96, "i2c_pri_dat"))
 		pr_err("failed to request gpio i2c_pri_dat\n");
-
-#if !HUAWEI_HWID(S70)
 	if (gpio_request(60, "i2c_sec_clk"))
 		pr_err("failed to request gpio i2c_sec_clk\n");
 	if (gpio_request(61, "i2c_sec_dat"))
 		pr_err("failed to request gpio i2c_sec_dat\n");
-#endif
 
 	msm_i2c_pdata.rmutex = (uint32_t)smem_alloc(SMEM_I2C_MUTEX, 8);
 	msm_i2c_pdata.pm_lat =
@@ -4848,8 +4560,7 @@ static void __init qsd8x50_init(void)
 	platform_add_devices(devices, ARRAY_SIZE(devices));
 	msm_fb_add_devices();
 #ifdef CONFIG_MSM_CAMERA
-       /*lijuan rm*/
-	/*config_camera_off_gpios();*/ /* might not be necessary */
+	config_camera_off_gpios(); /* might not be necessary */
 #endif
 	qsd8x50_init_usb();
 	qsd8x50_init_mmc();
